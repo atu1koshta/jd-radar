@@ -30,9 +30,30 @@ from jobhunter.ports.portal import PortalContext
 
 _SELECTORS_PATH = Path(__file__).parent / "selectors.yaml"
 
+# Naukri's `ctcFilter` accepts only these discrete (lower, upper) bands
+# (lakhs/annum). An arbitrary expected CTC is floor-snapped onto whichever
+# band starts at or below it. The top band is "1-5 Cr" in the UI; encoded
+# here as 100-500 lakhs to keep one consistent unit.
+_CTC_BANDS: tuple[tuple[int, int], ...] = (
+    (0, 3), (3, 6), (6, 10), (10, 15),
+    (15, 25), (25, 50), (50, 75), (75, 100), (100, 500),
+)
+
 
 def _load_selectors() -> dict[str, Any]:
     return yaml.safe_load(_SELECTORS_PATH.read_text(encoding="utf-8"))
+
+
+def _ctc_band_for(expected_lpa: int) -> str:
+    """Floor-snap `expected_lpa` to a Naukri ctcFilter band (`<min>to<max>`).
+
+    `expected=25` -> "25to50". `expected=30` -> "25to50" (floor). Negative
+    inputs clamp to the lowest band.
+    """
+    for low, high in reversed(_CTC_BANDS):
+        if expected_lpa >= low:
+            return f"{low}to{high}"
+    return f"{_CTC_BANDS[0][0]}to{_CTC_BANDS[0][1]}"
 
 
 def password_auth_for_naukri() -> PasswordAuth:
@@ -130,11 +151,33 @@ class NaukriAdapter:
         slug_raw = query.keywords.strip().lower()
         slug = "-".join(slug_raw.split())
         slug = "".join(c if (c.isalnum() or c == "-") else "" for c in slug) or "jobs"
-        return tpl.format(
+        base = tpl.format(
             slug=slug,
             keywords=urllib.parse.quote_plus(query.keywords),
             location=urllib.parse.quote_plus(query.location or ""),
         )
+        return self._append_filter_params(base, query)
+
+    def _append_filter_params(self, base_url: str, query: JobQuery) -> str:
+        """Translate canonical `JobQuery` filters to Naukri URL params."""
+        extra: list[tuple[str, str]] = []
+
+        filter_map: dict[str, dict[str, str]] = (
+            self._selectors["search"].get("filters") or {}
+        )
+        for field_name, spec in filter_map.items():
+            value = getattr(query, field_name, None)
+            if value is None:
+                continue
+            extra.append((spec["param"], spec["fmt"].format(value=value)))
+
+        if query.expected_ctc_lpa is not None:
+            extra.append(("ctcFilter", _ctc_band_for(query.expected_ctc_lpa)))
+
+        if not extra:
+            return base_url
+        sep = "&" if "?" in base_url else "?"
+        return base_url + sep + urllib.parse.urlencode(extra)
 
     async def _dump_debug(self, page: BrowserPage, label: str) -> None:
         """On a selector / nav failure, persist a screenshot + raw HTML so

@@ -21,6 +21,12 @@ search:
   # https://www.naukri.com/<keywords-slug>-jobs?k=<keywords>&l=<location>
   # The adapter builds `slug` from the keywords (lowercase, spaces->hyphens).
   url_template: "https://www.naukri.com/{slug}-jobs?k={keywords}&l={location}"
+  # Canonical-filter -> URL-param mapping. Adapter iterates these and
+  # appends `&<param>=<fmt(value)>` for each non-None JobQuery field.
+  # ctcFilter is NOT here — it requires band-snapping logic in code.
+  filters:
+    posted_within_days: { param: jobAge,     fmt: "{value}" }
+    experience_years:   { param: experience, fmt: "{value}" }
   # Multiple selector variants. Naukri A/B-tests card markup; we match any.
   job_card: "div.cust-job-tuple, article.jobTuple, div.jobTuple, div.srp-jobtuple-wrapper, div[class*='jobTuple']"
   job_title_link: "a.title, a.jobTitle, a[class*='title']"

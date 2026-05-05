@@ -35,10 +35,6 @@ notify = [
 embeddings = [
     "sentence-transformers>=3.0",
 ]
-llm-cloud = [
-    "anthropic>=0.34",
-    "openai>=1.40",
-]
 dev = [
     "pytest>=8.2",
     "pytest-asyncio>=0.23",

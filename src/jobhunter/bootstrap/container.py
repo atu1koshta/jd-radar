@@ -125,9 +125,9 @@ def _instantiate_llm(cls: type[Any], settings: Settings) -> LLMProvider:
     """Construct an LLMProvider via `from_settings(s)` if the adapter
     exposes one, otherwise fall back to a model-only constructor.
 
-    Every cloud / local backend should implement `from_settings` so it can
-    pull its own creds (api keys, base URLs, timeouts) without making this
-    function know about every backend.
+    Every backend should implement `from_settings` so it can pull its own
+    config (base URLs, timeouts) without making this function know about
+    every backend.
     """
     if hasattr(cls, "from_settings"):
         return cls.from_settings(settings)  # type: ignore[no-any-return]

@@ -29,9 +29,9 @@ class JobQuery(BaseModel):
     keywords: str
     location: str | None = None
     remote: bool | None = None
-    min_experience_years: int | None = None
-    max_experience_years: int | None = None
-    salary_min: int | None = None
+    posted_within_days: int | None = None
+    experience_years: int | None = None
+    expected_ctc_lpa: int | None = None
     extra: dict[str, Any] = Field(default_factory=dict)
 
 

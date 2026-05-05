@@ -1,7 +1,7 @@
 """LLMProvider port + neutral request/response types.
 
-Every adapter (Ollama, Anthropic, OpenAI, ...) consumes the same Prompt /
-Completion / ToolSpec types. Use cases never import a vendor SDK.
+Every adapter consumes the same Prompt / Completion / ToolSpec types. Use
+cases never import a vendor SDK.
 """
 
 from __future__ import annotations
@@ -27,10 +27,10 @@ class Prompt(BaseModel):
     for the common single-turn case.
 
     `extra` is a best-effort escape hatch for backend-specific knobs
-    (Ollama `options.seed`, OpenAI `seed`, Anthropic `top_k`, ...). Values
-    placed here are passed through to the active adapter and silently
-    dropped by adapters that don't recognise them. **Portability across
-    backends is NOT guaranteed.** Use it for tuning, never for correctness.
+    (e.g. Ollama `options.seed`). Values placed here are passed through
+    to the active adapter and silently dropped by adapters that don't
+    recognise them. **Portability across backends is NOT guaranteed.**
+    Use it for tuning, never for correctness.
     """
 
     system: str | None = None

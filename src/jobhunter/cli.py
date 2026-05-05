@@ -248,6 +248,15 @@ def portal_test_cmd(
         None, "--location", help="Optional location filter (portal-specific format)."
     ),
     limit: int = typer.Option(5, "--limit", min=1, max=50, help="Max jobs to fetch."),
+    experience: int | None = typer.Option(
+        None, "--experience", min=0, help="Years of experience filter. Falls back to DEFAULT_EXPERIENCE_YEARS.",
+    ),
+    posted_within: int | None = typer.Option(
+        None, "--posted-within", min=1, help="Only jobs posted within this many days. Falls back to DEFAULT_POSTED_WITHIN_DAYS.",
+    ),
+    ctc: int | None = typer.Option(
+        None, "--ctc", min=0, help="Expected CTC in lakhs/annum. Falls back to DEFAULT_EXPECTED_CTC_LPA.",
+    ),
     fetch_jds: bool = typer.Option(
         True,
         "--fetch-jds/--no-fetch-jds",
@@ -268,19 +277,30 @@ def portal_test_cmd(
     if headless is not None:
         container.settings.browser_headless = headless  # one-shot override
 
+    s = container.settings
+    jq = JobQuery(
+        keywords=query,
+        location=location,
+        experience_years=experience if experience is not None else s.default_experience_years,
+        posted_within_days=posted_within if posted_within is not None else s.default_posted_within_days,
+        expected_ctc_lpa=ctc if ctc is not None else s.default_expected_ctc_lpa,
+    )
+
     logger.info(
-        "portal-test {} query={!r} location={!r} limit={} headless={}",
+        "portal-test {} query={!r} location={!r} limit={} headless={} filters={{exp={}, posted_within={}, ctc={}}}",
         portal,
         query,
         location,
         limit,
         container.settings.browser_headless,
+        jq.experience_years,
+        jq.posted_within_days,
+        jq.expected_ctc_lpa,
     )
 
     async def _run() -> None:
         adapter = container.build_portal(portal)
         try:
-            jq = JobQuery(keywords=query, location=location)
             jobs: list = []
             async for job in adapter.search(jq, limit=limit):
                 if fetch_jds:
@@ -483,6 +503,15 @@ def run_cmd(
     ),
     location: str | None = typer.Option(None, "--location", help="Optional location filter."),
     limit: int = typer.Option(1, "--limit", min=1, max=50, help="Max jobs this run."),
+    experience: int | None = typer.Option(
+        None, "--experience", min=0, help="Years of experience filter. Falls back to DEFAULT_EXPERIENCE_YEARS.",
+    ),
+    posted_within: int | None = typer.Option(
+        None, "--posted-within", min=1, help="Only jobs posted within this many days. Falls back to DEFAULT_POSTED_WITHIN_DAYS.",
+    ),
+    ctc: int | None = typer.Option(
+        None, "--ctc", min=0, help="Expected CTC in lakhs/annum. Falls back to DEFAULT_EXPECTED_CTC_LPA.",
+    ),
     workers: int | None = typer.Option(
         None,
         "--workers",
@@ -508,20 +537,32 @@ def run_cmd(
     if headless is not None:
         container.settings.browser_headless = headless
 
+    s = container.settings
+    jq = JobQuery(
+        keywords=query,
+        location=location,
+        experience_years=experience if experience is not None else s.default_experience_years,
+        posted_within_days=posted_within if posted_within is not None else s.default_posted_within_days,
+        expected_ctc_lpa=ctc if ctc is not None else s.default_expected_ctc_lpa,
+    )
+
     logger.info(
-        "run portal={} query={!r} limit={} workers={} refresh_resume={}",
+        "run portal={} query={!r} limit={} workers={} refresh_resume={} filters={{exp={}, posted_within={}, ctc={}}}",
         portal,
         query,
         limit,
         workers or container.settings.pipeline_workers,
         refresh_resume,
+        jq.experience_years,
+        jq.posted_within_days,
+        jq.expected_ctc_lpa,
     )
 
     async def _run() -> None:
         report = await run_pipeline(
             container=container,
             portal_name=portal,
-            query=JobQuery(keywords=query, location=location),
+            query=jq,
             limit=limit,
             workers=workers,
             refresh_resume=refresh_resume,

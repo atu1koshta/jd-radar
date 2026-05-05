@@ -34,16 +34,6 @@ class Settings(BaseSettings):
     llm_request_timeout_s: float = 600.0
     llm_max_tokens: int | None = None  # adapter-specific cap; None = backend default
 
-    # Cloud LLM credentials. Each backend pulls its own via `from_settings()`.
-    # None defaults are intentional — a missing key only matters if the user
-    # actually selects that backend.
-    anthropic_api_key: str | None = None
-    anthropic_base_url: str | None = None
-    openai_api_key: str | None = None
-    openai_base_url: str | None = None
-    openai_organization: str | None = None
-    groq_api_key: str | None = None
-
     # ---- Embeddings ----------------------------------------------------
     embed_backend: str = "noop"
     embed_model: str = "BAAI/bge-small-en-v1.5"
@@ -71,6 +61,13 @@ class Settings(BaseSettings):
         default_factory=lambda: ["alert", "draft_email"]
     )
 
+    # ---- Default search filters --------------------------------------
+    # Canonical, portal-agnostic. Each adapter maps these to its own URL
+    # grammar (e.g. Naukri: jobAge=, experience=, ctcFilter=).
+    default_posted_within_days: int | None = None
+    default_experience_years: int | None = None
+    default_expected_ctc_lpa: int | None = None
+
     # Browser controls (Playwright). `headless=False` is useful while the
     # user is still verifying selectors; production runs flip to True.
     browser_headless: bool = True
@@ -78,10 +75,8 @@ class Settings(BaseSettings):
     browser_human_delay_ms_min: int = 250
     browser_human_delay_ms_max: int = 900
 
-    # Pipeline concurrency. With a local LLM (Ollama) ~2 workers is the
-    # sweet spot — Ollama serializes server-side, so more clients only
-    # buy parallelism on the browser side. With cloud LLMs that handle
-    # concurrent requests (Anthropic, Groq) bump to 3-4.
+    # Pipeline concurrency. Ollama serializes server-side, so more clients
+    # only buy parallelism on the browser side. ~2 workers is the sweet spot.
     pipeline_workers: int = 2
     pipeline_queue_size: int = 8
 

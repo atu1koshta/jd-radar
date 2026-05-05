@@ -16,7 +16,7 @@ Why N parallel `process` workers help with a local LLM:
 
 Three concurrent in-flight jobs hide the per-stage latency behind the
 others. Ollama still serializes calls server-side, so going beyond 2-3
-buys nothing without a cloud LLM that parallelises requests.
+buys nothing.
 """
 
 from __future__ import annotations
