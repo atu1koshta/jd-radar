@@ -1,0 +1,11 @@
+naukri:
+  base_url: https://www.naukri.com
+  rate_limit_per_min: 10
+  daily_search_cap: 200
+  selectors:
+    job_card: ".jobTuple"
+    job_title: ".jobTuple .title"
+    job_company: ".jobTuple .companyInfo"
+  auth:
+    type: email_otp
+    otp_sender: "info@naukri.com"

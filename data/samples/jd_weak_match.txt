@@ -1,0 +1,27 @@
+Senior iOS Engineer (Swift / SwiftUI)
+
+Lead the mobile experience for our consumer health app. Reporting to the
+Head of Mobile, you'll shape architecture, performance, and accessibility
+across iOS.
+
+Responsibilities
+- Ship SwiftUI features end-to-end (design system to release)
+- Drive Swift Concurrency adoption across the codebase
+- Profile and optimise app cold-start and scroll performance
+- Own Core Data + CloudKit sync layer
+- Mentor 3 mid-level iOS engineers
+- Partner with design on motion + haptics
+
+Must have
+- 7+ years shipping native iOS apps in Swift
+- Production SwiftUI in a large codebase
+- Strong grip on Combine / Swift Concurrency
+- Core Data, URLSession, XCTest
+
+Nice
+- Published apps on the App Store
+- Background processing, push notifications
+- Accessibility / VoiceOver experience
+- watchOS or visionOS exposure
+
+Location: On-site, San Francisco

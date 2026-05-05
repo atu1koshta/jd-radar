@@ -1,0 +1,27 @@
+Backend Engineer - Java / Spring Boot
+
+We are a fintech scale-up looking for a backend engineer to join our
+Lending platform team. You'll work alongside data engineers and SREs to
+build the next generation of credit-decisioning APIs.
+
+What you'll do
+- Build and maintain Java services on Spring Boot
+- Design REST APIs consumed by 4+ internal teams
+- Write SQL against MySQL and tune slow queries
+- Contribute to our Kafka event pipeline
+- Pair with SRE on Kubernetes deployments
+- Be on-call on a rotating schedule
+
+Must have
+- 4+ years backend engineering experience
+- Solid Java + Spring Boot in production
+- SQL fluency (MySQL or Postgres)
+- REST API design
+- Comfortable with Linux + git
+
+Bonus
+- Some Python or Go on the side
+- Experience with credit / lending domain
+- Exposure to AWS or GCP
+
+Location: Bangalore (hybrid, 2 days in office)

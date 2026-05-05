@@ -1,0 +1,82 @@
+# --- Python -------------------------------------------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+.python-version
+
+# --- Virtual envs -------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+.virtualenv/
+
+# --- Secrets / local config (never commit) -----------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# --- Build / packaging --------------------------------------------------
+dist/
+build/
+*.whl
+*.tar.gz
+pip-wheel-metadata/
+
+# --- Test / type / lint / coverage caches ------------------------------
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+nosetests.xml
+*.cover
+
+# --- Local runtime state (never commit) --------------------------------
+data/jobhunter.db
+data/jobhunter.db-*
+data/jobhunter.db.*
+data/resume_cache.yaml
+data/storage_state/
+data/chroma/
+data/snapshots/
+data/runs/
+
+# Browser automation artefacts (Phase 2)
+.playwright/
+playwright-report/
+test-results/
+
+# Logs
+*.log
+logs/
+
+# --- IDE / OS -----------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Project-specific ---------------------------------------------------
+# Keep curated fixtures in tests/fixtures/ and samples in data/samples/
+# but ignore any ad-hoc scratch files dropped during debugging.
+scratch/
+tmp/
+*.bak

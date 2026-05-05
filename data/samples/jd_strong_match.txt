@@ -1,0 +1,31 @@
+Senior Backend Engineer (Python)
+
+About the role
+We're hiring a senior backend engineer to lead our payments platform.
+You'll own service design, code reviews, and mentor 2-3 mid-level engineers.
+
+Responsibilities
+- Design and ship Python microservices on FastAPI
+- Own PostgreSQL schema design and query performance tuning
+- Run services on AWS (ECS, RDS, S3, Lambda)
+- Build async pipelines (asyncio, Celery, or similar)
+- Containerize everything with Docker
+- Drive CI/CD via GitHub Actions
+- Pair with frontend on REST + GraphQL contracts
+
+Required
+- 6+ years of professional backend engineering
+- Strong Python (typing, asyncio, Pydantic)
+- Production experience with FastAPI or Flask/Django
+- Deep PostgreSQL knowledge (indexing, query plans, transactions)
+- AWS in production (any of: ECS, EKS, Lambda, RDS)
+- Docker, Linux, git
+
+Nice to have
+- Kafka or other event streaming
+- Observability (OpenTelemetry, Datadog)
+- Terraform or Pulumi
+- Mentoring experience
+
+Location: Remote (India hours)
+Compensation: Competitive + equity
