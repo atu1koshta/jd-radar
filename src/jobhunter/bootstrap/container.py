@@ -28,7 +28,6 @@ from jobhunter.bootstrap import registry
 from jobhunter.bootstrap.config import Settings
 from jobhunter.core.entities import (
     ActionRecord,
-    EmailDraft,
     Match,
     Resume,
     Run,
@@ -36,7 +35,6 @@ from jobhunter.core.entities import (
 from jobhunter.core.errors import ConfigError
 from jobhunter.ports.auth import Credentials
 from jobhunter.ports.browser import BrowserDriver
-from jobhunter.ports.email_sender import EmailSender
 from jobhunter.ports.llm import LLMProvider
 from jobhunter.ports.notifier import NotificationChannel
 from jobhunter.ports.page_extractor import PageExtractor
@@ -67,9 +65,7 @@ class Container:
     browser: BrowserDriver | None = None
     page_extractor: PageExtractor | None = None
     notifier: NotificationChannel | None = None
-    email_sender: EmailSender | None = None
     match_repo: Repository[Match] | None = None
-    draft_repo: Repository[EmailDraft] | None = None
     action_record_repo: Repository[ActionRecord] | None = None
     run_repo: Repository[Run] | None = None
 
@@ -96,9 +92,6 @@ class Container:
 
     def embedding(self, name: str) -> type[Any]:
         return self.plugin("embeddings", name)
-
-    def email_sender_class(self, name: str) -> type[Any]:
-        return self.plugin("email_senders", name)
 
     def build_action(self, name: str) -> Any:
         """Instantiate a registered action by name.
@@ -226,21 +219,6 @@ def _build_notifier(
         return None
 
 
-def _build_email_sender(
-    settings: Settings, plugins: dict[str, dict[str, type[Any]]]
-) -> EmailSender:
-    name = settings.email_sender_backend.lower()
-    classes = plugins.get("email_senders", {})
-    if name not in classes:
-        raise ConfigError(
-            f"email_sender '{name}' not registered. Available: {sorted(classes)}"
-        )
-    cls = classes[name]
-    if hasattr(cls, "from_settings"):
-        return cls.from_settings(settings)  # type: ignore[no-any-return]
-    return cls()
-
-
 def build_container(settings: Settings | None = None) -> Container:
     s = settings or Settings()
     plugins = registry.all_groups()
@@ -253,11 +231,7 @@ def build_container(settings: Settings | None = None) -> Container:
     page_extractor: PageExtractor = TrafilaturaPageExtractor()
 
     notifier = _build_notifier(s, plugins)
-    email_sender = _build_email_sender(s, plugins)
     match_repo: Repository[Match] = SQLiteRepository(Match, database_url=s.database_url)
-    draft_repo: Repository[EmailDraft] = SQLiteRepository(
-        EmailDraft, database_url=s.database_url
-    )
     action_record_repo: Repository[ActionRecord] = SQLiteRepository(
         ActionRecord, database_url=s.database_url
     )
@@ -273,9 +247,7 @@ def build_container(settings: Settings | None = None) -> Container:
         browser=browser,
         page_extractor=page_extractor,
         notifier=notifier,
-        email_sender=email_sender,
         match_repo=match_repo,
-        draft_repo=draft_repo,
         action_record_repo=action_record_repo,
         run_repo=run_repo,
     )

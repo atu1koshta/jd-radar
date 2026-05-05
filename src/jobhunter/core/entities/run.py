@@ -30,7 +30,6 @@ class RunCounters(BaseModel):
     jobs_seen: int = 0
     jobs_scored: int = 0
     jobs_failed: int = 0
-    matches_drafted: int = 0
     matches_alerted: int = 0
     matches_skipped: int = 0
     actions_succeeded: int = 0

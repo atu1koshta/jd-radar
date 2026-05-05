@@ -24,9 +24,9 @@ from jobhunter.core.entities import Job, Match
 class ActionContext(BaseModel):
     """Per-execution carrier handed to every action.
 
-    `ports` maps a port name (e.g. "notifier", "email_sender", "llm",
-    "match_repo", "draft_repo") to a concrete adapter instance. Action
-    constructors pull the entries they need; nothing else.
+    `ports` maps a port name (e.g. "notifier", "llm", "match_repo") to a
+    concrete adapter instance. Action constructors pull the entries they
+    need; nothing else.
     """
 
     model_config = {"arbitrary_types_allowed": True}

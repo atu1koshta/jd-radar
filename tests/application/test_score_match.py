@@ -83,7 +83,7 @@ def _resume(years: float = 8.0) -> Resume:
     )
 
 
-async def test_high_confidence_low_risk_yields_draft_decision() -> None:
+async def test_high_confidence_yields_alert_decision() -> None:
     llm = StubLLM(
         ScoringRubric(
             skill_overlap=0.9, title_match=0.9, years_required=5, reasoning="strong fit"
@@ -100,7 +100,7 @@ async def test_high_confidence_low_risk_yields_draft_decision() -> None:
     expected_conf = W_SKILL * 0.9 + W_TITLE * 0.9 + W_EXPERIENCE * 1.0
     assert abs(match.confidence - expected_conf) < 1e-9
     assert abs(match.risk - (1.0 - expected_conf)) < 1e-9
-    assert match.decision is Decision.DRAFT
+    assert match.decision is Decision.ALERT
     assert match.job_id == "job:1"
     assert rubric is llm._rubric  # type: ignore[attr-defined]
     assert match.breakdown["reasoning"] == "strong fit"
@@ -125,7 +125,7 @@ async def test_partial_skill_match_lands_on_alert() -> None:
 async def test_low_skill_overlap_skips() -> None:
     llm = StubLLM(
         ScoringRubric(
-            skill_overlap=0.1, title_match=0.2, years_required=5, reasoning="bad fit"
+            skill_overlap=0.1, title_match=0.1, years_required=99, reasoning="bad fit"
         )
     )
     match, _ = await score_match(

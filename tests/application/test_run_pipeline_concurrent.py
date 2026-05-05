@@ -131,7 +131,7 @@ class _AlwaysAlertAction:
 
 
 class _BoomAction:
-    # Use "alert" so decide_actions selects it under DRAFT/ALERT — the
+    # Use "alert" so decide_actions selects it under ALERT — the
     # hardcoded mapping in decide_actions filters by v1 action names.
     name = "alert"
 
@@ -185,9 +185,7 @@ class _Container:
         self.llm = _StubLLM()
         self.resume_loader = _StubLoader(_resume())
         self.notifier = None
-        self.email_sender = None
         self.match_repo = None
-        self.draft_repo = None
         self.action_record_repo = None
         self.run_repo = None
 
@@ -218,7 +216,7 @@ async def test_all_jobs_drained_and_status_done_with_n_workers() -> None:
     assert report.status is RunStatus.DONE
     assert report.counters.jobs_seen == 5
     assert report.counters.jobs_scored == 5
-    assert report.counters.matches_drafted == 5  # rubric 0.95/0.95 → DRAFT
+    assert report.counters.matches_alerted == 5  # rubric 0.95/0.95 → ALERT
     assert report.counters.actions_succeeded >= 5
     assert portal.closed is True
     assert sorted(portal.fetched_ids) == [f"naukri:{i}" for i in range(5)]

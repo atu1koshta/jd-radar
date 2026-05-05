@@ -34,13 +34,13 @@ async def test_save_overwrites_existing_row(tmp_db_url: str) -> None:
     repo: SQLiteRepository[Match] = SQLiteRepository(Match, database_url=tmp_db_url)
     m = Match(id="m1", job_id="j1", confidence=0.4, risk=0.6, decision=Decision.SKIP)
     await repo.save(m)
-    m2 = m.model_copy(update={"confidence": 0.9, "decision": Decision.DRAFT})
+    m2 = m.model_copy(update={"confidence": 0.9, "decision": Decision.ALERT})
     await repo.save(m2)
 
     fetched = await repo.get("m1")
     assert fetched is not None
     assert fetched.confidence == 0.9
-    assert fetched.decision is Decision.DRAFT
+    assert fetched.decision is Decision.ALERT
 
 
 @pytest.mark.asyncio
@@ -49,7 +49,6 @@ async def test_list_filters_in_python(tmp_db_url: str) -> None:
         ActionRecord, database_url=tmp_db_url
     )
     await repo.save(ActionRecord(id="a1", match_id="m1", action_name="alert"))
-    await repo.save(ActionRecord(id="a2", match_id="m1", action_name="draft_email"))
     await repo.save(
         ActionRecord(
             id="a3",

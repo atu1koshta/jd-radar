@@ -18,8 +18,7 @@ class AlertAction:
     name = "alert"
 
     async def is_applicable(self, ctx: ActionContext) -> bool:
-        # Both ALERT and DRAFT decisions warrant a Telegram ping.
-        return str(ctx.match.decision) in {"ALERT", "DRAFT"}
+        return str(ctx.match.decision) == "ALERT"
 
     async def execute(self, ctx: ActionContext) -> ActionResult:
         notifier = ctx.ports.get("notifier")

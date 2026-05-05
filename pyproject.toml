@@ -55,13 +55,9 @@ naukri = "jobhunter.adapters.portals.naukri.adapter:NaukriAdapter"
 
 [project.entry-points."jobhunter.actions"]
 alert = "jobhunter.adapters.actions.alert:AlertAction"
-draft_email = "jobhunter.adapters.actions.draft_email:DraftEmailAction"
 
 [project.entry-points."jobhunter.notifiers"]
 telegram = "jobhunter.adapters.notifier.telegram:TelegramNotifier"
-
-[project.entry-points."jobhunter.email_senders"]
-log_only = "jobhunter.adapters.email_sender.log_only:LogOnlyEmailSender"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/jobhunter"]

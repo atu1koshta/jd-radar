@@ -38,9 +38,8 @@ class Settings(BaseSettings):
     embed_backend: str = "noop"
     embed_model: str = "BAAI/bge-small-en-v1.5"
 
-    # ---- Notifier + email sender selection ----------------------------
+    # ---- Notifier selection -------------------------------------------
     notifier_backend: str = "telegram"
-    email_sender_backend: str = "log_only"
 
     # ---- Resume --------------------------------------------------------
     resume_loader: str = "github_yaml"
@@ -58,7 +57,7 @@ class Settings(BaseSettings):
         default_factory=lambda: ["naukri"]
     )
     enabled_actions: Annotated[list[str], NoDecode] = Field(
-        default_factory=lambda: ["alert", "draft_email"]
+        default_factory=lambda: ["alert"]
     )
 
     # ---- Default search filters --------------------------------------
@@ -94,13 +93,6 @@ class Settings(BaseSettings):
     # ---- Telegram ------------------------------------------------------
     telegram_token: str | None = None
     telegram_chat_id: str | None = None
-
-    # ---- SMTP (manual approval only) ----------------------------------
-    smtp_host: str | None = None
-    smtp_port: int = 587
-    smtp_user: str | None = None
-    smtp_pass: str | None = None
-    smtp_from: str | None = None
 
     # ---- Storage -------------------------------------------------------
     database_url: str = "sqlite:///data/jobhunter.db"

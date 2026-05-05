@@ -64,14 +64,6 @@ class _StubPortal:
     pass
 
 
-class _StubEmailSender:
-    name = "log_only"
-
-    @classmethod
-    def from_settings(cls, _settings: Settings) -> "_StubEmailSender":
-        return cls()
-
-
 @pytest.fixture
 def fake_settings(tmp_path) -> Settings:
     return Settings(
@@ -94,7 +86,6 @@ def test_from_settings_dispatch_picks_active_backend(fake_settings: Settings) ->
         "actions": {},
         "notifiers": {},
         "embeddings": {},
-        "email_senders": {"log_only": _StubEmailSender},
     }
     with patch.object(container_mod.registry, "all_groups", return_value=plugins):
         c = container_mod.build_container(fake_settings)
@@ -112,7 +103,6 @@ def test_legacy_adapter_without_from_settings_still_constructs(fake_settings: Se
         "actions": {},
         "notifiers": {},
         "embeddings": {},
-        "email_senders": {"log_only": _StubEmailSender},
     }
     with patch.object(container_mod.registry, "all_groups", return_value=plugins):
         c = container_mod.build_container(fake_settings)
@@ -129,7 +119,6 @@ def test_unknown_backend_raises_config_error(fake_settings: Settings) -> None:
         "actions": {},
         "notifiers": {},
         "embeddings": {},
-        "email_senders": {"log_only": _StubEmailSender},
     }
     with patch.object(container_mod.registry, "all_groups", return_value=plugins):
         with pytest.raises(ConfigError) as ei:
@@ -144,7 +133,6 @@ def test_plugin_lookup_helpers_return_classes(fake_settings: Settings) -> None:
         "actions": {"alert": _StubAction},
         "notifiers": {},
         "embeddings": {},
-        "email_senders": {"log_only": _StubEmailSender},
     }
     with patch.object(container_mod.registry, "all_groups", return_value=plugins):
         c = container_mod.build_container(fake_settings)
@@ -160,7 +148,6 @@ def test_plugin_lookup_missing_raises_config_error(fake_settings: Settings) -> N
         "actions": {"alert": _StubAction},
         "notifiers": {},
         "embeddings": {},
-        "email_senders": {"log_only": _StubEmailSender},
     }
     with patch.object(container_mod.registry, "all_groups", return_value=plugins):
         c = container_mod.build_container(fake_settings)

@@ -9,8 +9,6 @@ from jobhunter.core.entities import (
     ActionRecord,
     ActionStatus,
     Decision,
-    EmailDraft,
-    EmailDraftStatus,
     InterpretedResume,
     InterpretedSkill,
     Job,
@@ -33,9 +31,9 @@ def test_match_clips_confidence_and_risk_into_unit_interval() -> None:
 
 
 def test_match_decision_is_strenum() -> None:
-    m = Match(id="m1", job_id="j1", confidence=0.5, risk=0.5, decision="DRAFT")
-    assert m.decision is Decision.DRAFT
-    assert m.decision == "DRAFT"
+    m = Match(id="m1", job_id="j1", confidence=0.5, risk=0.5, decision="ALERT")
+    assert m.decision is Decision.ALERT
+    assert m.decision == "ALERT"
 
 
 def test_job_requires_url_and_core_fields() -> None:
@@ -46,12 +44,6 @@ def test_job_requires_url_and_core_fields() -> None:
 def test_action_record_defaults_to_pending() -> None:
     a = ActionRecord(id="a1", match_id="m1", action_name="alert")
     assert a.status is ActionStatus.PENDING
-
-
-def test_email_draft_starts_pending_review() -> None:
-    d = EmailDraft(id="d1", job_id="j1", to="x@y.z", subject="hi", body="hello")
-    assert d.status is EmailDraftStatus.PENDING_REVIEW
-    assert d.sent_at is None
 
 
 # ---- Resume + InterpretedResume -----------------------------------------

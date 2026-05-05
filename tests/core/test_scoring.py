@@ -104,24 +104,16 @@ def test_anti_bot_signal_pushes_risk_up_and_clips_at_one() -> None:
 
 
 def test_decide_skip_below_alert_threshold() -> None:
-    assert decide(confidence=0.4, risk=0.6, risk_tolerance=0.3) is Decision.SKIP
+    assert decide(confidence=0.4) is Decision.SKIP
 
 
 def test_decide_alert_at_medium_confidence() -> None:
-    assert decide(confidence=0.6, risk=0.4, risk_tolerance=0.3) is Decision.ALERT
+    assert decide(confidence=0.6) is Decision.ALERT
 
 
-def test_decide_draft_requires_high_confidence_and_low_risk() -> None:
-    assert decide(confidence=0.85, risk=0.15, risk_tolerance=0.3) is Decision.DRAFT
+def test_decide_alert_at_high_confidence() -> None:
+    assert decide(confidence=0.85) is Decision.ALERT
 
 
-def test_decide_falls_back_to_alert_when_risk_exceeds_tolerance() -> None:
-    # confidence is high enough on its own, but risk blows past the tolerance.
-    assert decide(confidence=0.9, risk=0.5, risk_tolerance=0.3) is Decision.ALERT
-
-
-def test_decide_higher_risk_tolerance_lowers_draft_threshold() -> None:
-    # confidence 0.6 is below the default DRAFT bar (0.7 with tol=0.3) ...
-    assert decide(confidence=0.6, risk=0.4, risk_tolerance=0.3) is Decision.ALERT
-    # ... but with tolerance bumped to 0.5 the same match becomes DRAFT.
-    assert decide(confidence=0.6, risk=0.4, risk_tolerance=0.5) is Decision.DRAFT
+def test_decide_boundary_exactly_half() -> None:
+    assert decide(confidence=0.5) is Decision.ALERT

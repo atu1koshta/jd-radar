@@ -1,5 +1,4 @@
 from jobhunter.core.entities.action_record import ActionRecord, ActionStatus
-from jobhunter.core.entities.email_draft import EmailDraft, EmailDraftStatus
 from jobhunter.core.entities.interpreted_resume import (
     InterpretedExperience,
     InterpretedResume,
@@ -16,8 +15,6 @@ __all__ = [
     "ActionRecord",
     "ActionStatus",
     "Decision",
-    "EmailDraft",
-    "EmailDraftStatus",
     "InterpretedExperience",
     "InterpretedResume",
     "InterpretedSkill",

@@ -12,7 +12,6 @@ from pydantic import BaseModel, Field, field_validator
 class Decision(StrEnum):
     SKIP = "SKIP"
     ALERT = "ALERT"
-    DRAFT = "DRAFT"
 
 
 class Match(BaseModel):

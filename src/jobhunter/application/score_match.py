@@ -164,7 +164,7 @@ async def score_match(
     risk = compute_risk(
         confidence=confidence, portal_anti_bot_score=portal_anti_bot_score
     )
-    decision = decide(confidence=confidence, risk=risk, risk_tolerance=risk_tolerance)
+    decision = decide(confidence=confidence, risk_tolerance=risk_tolerance)
 
     breakdown["years_required"] = rubric.years_required
     breakdown["years_held"] = years_held

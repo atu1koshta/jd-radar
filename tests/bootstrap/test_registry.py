@@ -76,7 +76,6 @@ def test_all_groups_returns_every_known_group() -> None:
         "actions",
         "notifiers",
         "embeddings",
-        "email_senders",
     }
     assert snapshot["llm"] == {"ollama": _GoodPlugin}
     assert snapshot["portals"] == {}

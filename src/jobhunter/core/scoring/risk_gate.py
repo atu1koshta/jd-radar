@@ -1,8 +1,8 @@
 """Risk + decision math. Pure functions only.
 
 `decide()` translates (confidence, risk, risk_tolerance) into one of the
-three v1 decisions used by `application/decide_actions.py`. The Action
-subsystem then maps those into concrete actions (alert, draft email, ...).
+two v1 decisions used by `application/decide_actions.py`. The Action
+subsystem then maps those into concrete actions (alert, ...).
 """
 
 from __future__ import annotations
@@ -23,25 +23,12 @@ def compute_risk(*, confidence: float, portal_anti_bot_score: float = 0.0) -> fl
     return _clip01((1.0 - _clip01(confidence)) + _clip01(portal_anti_bot_score))
 
 
-def decide(
-    *,
-    confidence: float,
-    risk: float,
-    risk_tolerance: float,
-) -> Decision:
-    """Bucket a Match into SKIP / ALERT / DRAFT.
+def decide(*, confidence: float, risk_tolerance: float = 0.5) -> Decision:
+    """Bucket a Match into SKIP / ALERT.
 
-    - DRAFT requires confidence >= 1 - risk_tolerance AND risk <= risk_tolerance.
-      A DRAFT match becomes [AlertAction, DraftEmailAction].
-    - ALERT requires confidence >= 0.5.
+    - ALERT requires confidence >= risk_tolerance.
     - Otherwise SKIP.
     """
-    c = _clip01(confidence)
-    r = _clip01(risk)
-    t = _clip01(risk_tolerance)
-
-    if c >= (1.0 - t) and r <= t:
-        return Decision.DRAFT
-    if c >= 0.5:
+    if _clip01(confidence) >= _clip01(risk_tolerance):
         return Decision.ALERT
     return Decision.SKIP

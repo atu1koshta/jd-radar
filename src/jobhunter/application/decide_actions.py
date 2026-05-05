@@ -26,9 +26,8 @@ def decide_actions(
     """Return the ordered list of Actions to run for this Match.
 
     v1 mapping:
-        SKIP  -> []                                (no side effects)
-        ALERT -> [AlertAction]                     (Telegram only)
-        DRAFT -> [AlertAction, DraftEmailAction]   (alert + email draft)
+        SKIP  -> []                (no side effects)
+        ALERT -> [AlertAction]     (Telegram only)
 
     Each Action also gets a final `is_applicable(ctx)` check at the
     execute-time call site, so individual actions can opt out of a match
@@ -38,14 +37,9 @@ def decide_actions(
         return []
 
     by_name = {a.name: a for a in available_actions}
-
-    selected: list[str] = ["alert"] if match.decision in (Decision.ALERT, Decision.DRAFT) else []
-    if match.decision == Decision.DRAFT:
-        selected.append("draft_email")
-
     out: list[Action] = []
-    for name in selected:
-        action = by_name.get(name)
+    if match.decision == Decision.ALERT:
+        action = by_name.get("alert")
         if action is not None:
             out.append(action)
     return out

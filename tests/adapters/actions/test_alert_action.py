@@ -55,10 +55,9 @@ def _ctx(decision: Decision, *, ports: dict[str, Any]) -> ActionContext:
 
 
 @pytest.mark.asyncio
-async def test_is_applicable_for_alert_and_draft_only() -> None:
+async def test_is_applicable_only_for_alert() -> None:
     a = AlertAction()
     assert await a.is_applicable(_ctx(Decision.ALERT, ports={})) is True
-    assert await a.is_applicable(_ctx(Decision.DRAFT, ports={})) is True
     assert await a.is_applicable(_ctx(Decision.SKIP, ports={})) is False
 
 

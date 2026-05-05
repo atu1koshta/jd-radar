@@ -265,8 +265,6 @@ def _bump_decision_counter(counters: RunCounters, decision: Decision) -> None:
         counters.matches_skipped += 1
     elif decision == Decision.ALERT:
         counters.matches_alerted += 1
-    elif decision == Decision.DRAFT:
-        counters.matches_drafted += 1
 
 
 async def _score_and_persist(
@@ -302,8 +300,6 @@ async def _act_on_match(
         ports={
             "llm": container.llm,
             "notifier": container.notifier,
-            "email_sender": container.email_sender,
-            "draft_repo": container.draft_repo,
             "match_repo": container.match_repo,
             "resume": resume,
         },

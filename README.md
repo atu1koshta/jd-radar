@@ -1,10 +1,9 @@
 # Job Hunter AI
 
 Multi-portal job-search assistant. Searches Naukri / LinkedIn / Indeed (extensible),
-parses JDs, scores skill match against your resume, and produces two outputs:
+parses JDs, scores skill match against your resume, and produces:
 
 - **Telegram alert** for matched jobs
-- **Personalized email draft** persisted for review-before-send
 
 No auto-apply in v1. Hexagonal (ports & adapters) architecture — swap any LLM,
 portal, browser, notifier, or database via env without touching core logic.
@@ -21,7 +20,7 @@ playwright install chromium
 
 # 3. Configure
 cp .env.example .env
-# edit .env with your IMAP / Telegram / SMTP creds
+# edit .env with your IMAP / Telegram creds
 
 # 4. Smoke test the LLM wiring
 jobhunter test-llm
