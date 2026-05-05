@@ -19,6 +19,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from jobhunter.adapters.browser.playwright_driver import PlaywrightDriver
+from jobhunter.adapters.page_extractor.trafilatura_md import TrafilaturaPageExtractor
 from jobhunter.adapters.repository.sqlite import SQLiteRepository
 from jobhunter.adapters.resume_interpreter.llm import LLMResumeInterpreter
 from jobhunter.adapters.resume_loader.github_yaml import GitHubYamlResumeLoader
@@ -26,7 +28,11 @@ from jobhunter.bootstrap import registry
 from jobhunter.bootstrap.config import Settings
 from jobhunter.core.entities import Resume
 from jobhunter.core.errors import ConfigError
+from jobhunter.ports.auth import Credentials
+from jobhunter.ports.browser import BrowserDriver
 from jobhunter.ports.llm import LLMProvider
+from jobhunter.ports.page_extractor import PageExtractor
+from jobhunter.ports.portal import PortalAdapter, PortalContext
 from jobhunter.ports.repository import Repository
 from jobhunter.ports.resume_interpreter import ResumeInterpreter
 from jobhunter.ports.resume_loader import ResumeLoader
@@ -50,6 +56,8 @@ class Container:
     resume_repo: Repository[Resume] | None = None
     resume_interpreter: ResumeInterpreter | None = None
     resume_loader: ResumeLoader | None = None
+    browser: BrowserDriver | None = None
+    page_extractor: PageExtractor | None = None
 
     # ---- accessors ----------------------------------------------------
 
@@ -75,6 +83,17 @@ class Container:
     def embedding(self, name: str) -> type[Any]:
         return self.plugin("embeddings", name)
 
+    def build_portal(self, name: str) -> PortalAdapter:
+        """Construct a PortalAdapter by name, wiring its `PortalContext`.
+
+        The container owns the cred + selector wiring; new portals only
+        need to declare their entry point and accept a `PortalContext`
+        in their constructor.
+        """
+        if self.browser is None or self.page_extractor is None:
+            raise ConfigError("browser/page_extractor not built; cannot construct portal")
+        return _build_portal(name, self.settings, self.plugins, self.browser, self.page_extractor)
+
 
 def _instantiate_llm(cls: type[Any], settings: Settings) -> LLMProvider:
     """Construct an LLMProvider via `from_settings(s)` if the adapter
@@ -98,6 +117,49 @@ def _build_llm(settings: Settings, plugins: dict[str, dict[str, type[Any]]]) -> 
             f"Available: {sorted(llm_classes)}"
         )
     return _instantiate_llm(llm_classes[backend], settings)
+
+
+def _build_portal(
+    name: str,
+    settings: Settings,
+    plugins: dict[str, dict[str, type[Any]]],
+    browser: BrowserDriver,
+    extractor: PageExtractor,
+) -> PortalAdapter:
+    """Locate the portal class via the plugin registry, build its context,
+    and instantiate. Cred + auth wiring is portal-specific."""
+    portal_classes = plugins.get("portals", {})
+    if name not in portal_classes:
+        raise ConfigError(
+            f"portal '{name}' not registered. Available: {sorted(portal_classes)}"
+        )
+    cls = portal_classes[name]
+
+    if name == "naukri":
+        from jobhunter.adapters.portals.naukri.adapter import password_auth_for_naukri
+
+        if not settings.naukri_email or not settings.naukri_password:
+            raise ConfigError(
+                "naukri requires NAUKRI_EMAIL and NAUKRI_PASSWORD in .env"
+            )
+        ctx = PortalContext(
+            browser=browser,
+            auth=password_auth_for_naukri(),
+            extractor=extractor,
+            credentials=Credentials(
+                email=settings.naukri_email,
+                password=settings.naukri_password,
+            ),
+            storage_state_path=str(
+                settings.browser_storage_state_dir / "naukri.json"
+            ),
+            headless=settings.browser_headless,
+        )
+        return cls(ctx)
+
+    raise ConfigError(
+        f"portal '{name}' is registered but has no wiring in container._build_portal"
+    )
 
 
 def _build_resume_loader(
@@ -126,6 +188,8 @@ def build_container(settings: Settings | None = None) -> Container:
     resume_repo: Repository[Resume] = SQLiteRepository(Resume, database_url=s.database_url)
     interpreter: ResumeInterpreter = LLMResumeInterpreter(llm)
     resume_loader = _build_resume_loader(s, resume_repo, interpreter)
+    browser = PlaywrightDriver.from_settings(s)
+    page_extractor: PageExtractor = TrafilaturaPageExtractor()
 
     return Container(
         settings=s,
@@ -134,4 +198,6 @@ def build_container(settings: Settings | None = None) -> Container:
         resume_repo=resume_repo,
         resume_interpreter=interpreter,
         resume_loader=resume_loader,
+        browser=browser,
+        page_extractor=page_extractor,
     )

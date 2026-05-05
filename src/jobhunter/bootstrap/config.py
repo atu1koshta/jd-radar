@@ -67,6 +67,18 @@ class Settings(BaseSettings):
         default_factory=lambda: ["alert", "draft_email"]
     )
 
+    # Browser controls (Playwright). `headless=False` is useful while the
+    # user is still verifying selectors; production runs flip to True.
+    browser_headless: bool = True
+    browser_storage_state_dir: Path = Path("data/storage_state")
+    browser_human_delay_ms_min: int = 250
+    browser_human_delay_ms_max: int = 900
+
+    # ---- Portal credentials -------------------------------------------
+    naukri_email: str | None = None
+    naukri_password: str | None = None
+    naukri_base_url: str = "https://www.naukri.com"
+
     # ---- IMAP (OTP) ----------------------------------------------------
     imap_host: str = "imap.gmail.com"
     imap_port: int = 993

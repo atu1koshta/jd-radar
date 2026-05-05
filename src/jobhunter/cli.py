@@ -230,5 +230,84 @@ def score_cmd(
         raise typer.Exit(code=2) from e
 
 
+# -----------------------------------------------------------------------
+# portal-test — Phase 2: smoke a portal end-to-end (login + search + JD)
+# -----------------------------------------------------------------------
+
+
+@app.command("portal-test")
+def portal_test_cmd(
+    portal: str = typer.Argument(..., help="Registered portal name, e.g. 'naukri'"),
+    query: str = typer.Option(
+        "software engineer",
+        "--query",
+        "-q",
+        help="Search keywords. Default mirrors the user's canonical query.",
+    ),
+    location: str | None = typer.Option(
+        None, "--location", help="Optional location filter (portal-specific format)."
+    ),
+    limit: int = typer.Option(5, "--limit", min=1, max=50, help="Max jobs to fetch."),
+    fetch_jds: bool = typer.Option(
+        True,
+        "--fetch-jds/--no-fetch-jds",
+        help="Also navigate to each result's URL and extract the JD body.",
+    ),
+    headless: bool | None = typer.Option(
+        None,
+        "--headless/--headed",
+        help="Override BROWSER_HEADLESS for this run. --headed is useful while validating selectors.",
+    ),
+) -> None:
+    """End-to-end portal smoke: log in, search, optionally fetch each JD."""
+    from jobhunter.core.entities import JobQuery
+
+    container = build_container()
+    _configure_logging(container.settings.log_level)
+
+    if headless is not None:
+        container.settings.browser_headless = headless  # one-shot override
+
+    logger.info(
+        "portal-test {} query={!r} location={!r} limit={} headless={}",
+        portal,
+        query,
+        location,
+        limit,
+        container.settings.browser_headless,
+    )
+
+    async def _run() -> None:
+        adapter = container.build_portal(portal)
+        try:
+            jq = JobQuery(keywords=query, location=location)
+            jobs: list = []
+            async for job in adapter.search(jq, limit=limit):
+                if fetch_jds:
+                    job = await adapter.fetch_jd(job)
+                jobs.append(job)
+
+            payload = [
+                {
+                    "id": j.id,
+                    "title": j.title,
+                    "company": j.company,
+                    "url": str(j.url),
+                    "jd_chars": len(j.jd_raw or ""),
+                    "jd_content_hash": j.jd_content_hash[:12] if j.jd_content_hash else "",
+                }
+                for j in jobs
+            ]
+            typer.echo(json.dumps({"portal": portal, "count": len(jobs), "jobs": payload}, indent=2))
+        finally:
+            await adapter.close()
+
+    try:
+        asyncio.run(_run())
+    except JobHunterError as e:
+        logger.error("portal-test failed: {}", e)
+        raise typer.Exit(code=2) from e
+
+
 if __name__ == "__main__":
     app()

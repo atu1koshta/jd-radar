@@ -1,0 +1,36 @@
+# Naukri DOM selectors. Verify against the live site after first run; web
+# UIs drift. Capture refreshed selectors with `playwright codegen naukri.com`.
+
+login:
+  url: https://www.naukri.com/nlogin/login
+  email_input: "input#usernameField"
+  password_input: "input#passwordField"
+  submit_button: "button[type='submit']"
+  # After login Naukri redirects to /mnjuser/homepage (or similar). Glob
+  # form for `wait_for_url`; substring form (`authenticated_url_substring`)
+  # is what `is_authenticated` and the redirect-on-goto check use.
+  success_url_pattern: "**/mnjuser/**"
+  authenticated_url_substring: "/mnjuser/"
+  # Visible-only-when-logged-in element. Used as fallback for is_authenticated.
+  success_marker: "a[href*='/mnjuser/profile']"
+  error_marker: "[class*='errorMsg']"
+  captcha_marker: "iframe[src*='captcha']"
+
+search:
+  # Modern Naukri (2024+) prefers slug URLs:
+  # https://www.naukri.com/<keywords-slug>-jobs?k=<keywords>&l=<location>
+  # The adapter builds `slug` from the keywords (lowercase, spaces->hyphens).
+  url_template: "https://www.naukri.com/{slug}-jobs?k={keywords}&l={location}"
+  # Multiple selector variants. Naukri A/B-tests card markup; we match any.
+  job_card: "div.cust-job-tuple, article.jobTuple, div.jobTuple, div.srp-jobtuple-wrapper, div[class*='jobTuple']"
+  job_title_link: "a.title, a.jobTitle, a[class*='title']"
+  company_name: "a.subTitle, .comp-name, .companyName, span.comp-name"
+  location: ".loc, .location, span.locWdth"
+  next_button: "a.fright[title='Next'], a[class*='styles_btn-secondary']"
+
+jd:
+  # When fetch_jd navigates to a job URL, this selector marks the
+  # description container so we wait for it before extracting HTML.
+  description: ".jd-desc, .job-desc, .styles_JDC__dang-inner-html__h0K4t"
+  title: "h1.jd-header-title, h1"
+  company: ".jd-header-comp-name, .companyName"

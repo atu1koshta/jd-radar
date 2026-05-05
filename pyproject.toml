@@ -54,13 +54,13 @@ jobhunter = "jobhunter.cli:app"
 [project.entry-points."jobhunter.llm"]
 ollama = "jobhunter.adapters.llm.ollama:OllamaProvider"
 
-# Action + portal adapters land in Phase 2/3 — re-enable entries when files exist.
+[project.entry-points."jobhunter.portals"]
+naukri = "jobhunter.adapters.portals.naukri.adapter:NaukriAdapter"
+
+# Action adapters land in Phase 3 — re-enable entries when files exist.
 # [project.entry-points."jobhunter.actions"]
 # alert = "jobhunter.adapters.actions.alert:AlertAction"
 # draft_email = "jobhunter.adapters.actions.draft_email:DraftEmailAction"
-#
-# [project.entry-points."jobhunter.portals"]
-# naukri = "jobhunter.adapters.portals.naukri.adapter:NaukriAdapter"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/jobhunter"]

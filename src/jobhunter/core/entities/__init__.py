@@ -7,7 +7,7 @@ from jobhunter.core.entities.interpreted_resume import (
     SeniorityLevel,
     SkillCategory,
 )
-from jobhunter.core.entities.job import Job, JobQuery
+from jobhunter.core.entities.job import Job, JobQuery, jd_content_hash
 from jobhunter.core.entities.match import Decision, Match
 from jobhunter.core.entities.resume import Resume, canonical_body_hash
 
@@ -23,6 +23,7 @@ __all__ = [
     "Job",
     "JobQuery",
     "Match",
+    "jd_content_hash",
     "Resume",
     "SeniorityLevel",
     "SkillCategory",
