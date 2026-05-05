@@ -24,6 +24,7 @@ GROUP_PORTALS = "jobhunter.portals"
 GROUP_ACTIONS = "jobhunter.actions"
 GROUP_NOTIFIERS = "jobhunter.notifiers"
 GROUP_EMBEDDINGS = "jobhunter.embeddings"
+GROUP_EMAIL_SENDERS = "jobhunter.email_senders"
 
 
 def _entry_points(group: str) -> dict[str, type[Any]]:
@@ -69,6 +70,10 @@ def embedding_providers() -> dict[str, type[Any]]:
     return _entry_points(GROUP_EMBEDDINGS)
 
 
+def email_senders() -> dict[str, type[Any]]:
+    return _entry_points(GROUP_EMAIL_SENDERS)
+
+
 def all_groups() -> dict[str, dict[str, type[Any]]]:
     """Snapshot every registered plugin group at once. Used by Container."""
     return {
@@ -77,4 +82,5 @@ def all_groups() -> dict[str, dict[str, type[Any]]]:
         "actions": actions(),
         "notifiers": notifiers(),
         "embeddings": embedding_providers(),
+        "email_senders": email_senders(),
     }

@@ -70,6 +70,13 @@ def test_all_groups_returns_every_known_group() -> None:
     with patch.object(metadata, "entry_points", return_value=fake):
         snapshot = registry.all_groups()
 
-    assert set(snapshot.keys()) == {"llm", "portals", "actions", "notifiers", "embeddings"}
+    assert set(snapshot.keys()) == {
+        "llm",
+        "portals",
+        "actions",
+        "notifiers",
+        "embeddings",
+        "email_senders",
+    }
     assert snapshot["llm"] == {"ollama": _GoodPlugin}
     assert snapshot["portals"] == {}

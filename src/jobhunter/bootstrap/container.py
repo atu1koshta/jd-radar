@@ -26,11 +26,18 @@ from jobhunter.adapters.resume_interpreter.llm import LLMResumeInterpreter
 from jobhunter.adapters.resume_loader.github_yaml import GitHubYamlResumeLoader
 from jobhunter.bootstrap import registry
 from jobhunter.bootstrap.config import Settings
-from jobhunter.core.entities import Resume
+from jobhunter.core.entities import (
+    ActionRecord,
+    EmailDraft,
+    Match,
+    Resume,
+)
 from jobhunter.core.errors import ConfigError
 from jobhunter.ports.auth import Credentials
 from jobhunter.ports.browser import BrowserDriver
+from jobhunter.ports.email_sender import EmailSender
 from jobhunter.ports.llm import LLMProvider
+from jobhunter.ports.notifier import NotificationChannel
 from jobhunter.ports.page_extractor import PageExtractor
 from jobhunter.ports.portal import PortalAdapter, PortalContext
 from jobhunter.ports.repository import Repository
@@ -58,6 +65,11 @@ class Container:
     resume_loader: ResumeLoader | None = None
     browser: BrowserDriver | None = None
     page_extractor: PageExtractor | None = None
+    notifier: NotificationChannel | None = None
+    email_sender: EmailSender | None = None
+    match_repo: Repository[Match] | None = None
+    draft_repo: Repository[EmailDraft] | None = None
+    action_record_repo: Repository[ActionRecord] | None = None
 
     # ---- accessors ----------------------------------------------------
 
@@ -82,6 +94,18 @@ class Container:
 
     def embedding(self, name: str) -> type[Any]:
         return self.plugin("embeddings", name)
+
+    def email_sender_class(self, name: str) -> type[Any]:
+        return self.plugin("email_senders", name)
+
+    def build_action(self, name: str) -> Any:
+        """Instantiate a registered action by name.
+
+        Actions take no constructor args today (they pull deps from the
+        ActionContext at execute time); a future plugin with deps would
+        declare them here.
+        """
+        return self.action(name)()
 
     def build_portal(self, name: str) -> PortalAdapter:
         """Construct a PortalAdapter by name, wiring its `PortalContext`.
@@ -180,6 +204,41 @@ def _build_resume_loader(
     raise ConfigError(f"resume_loader '{backend}' is not implemented")
 
 
+def _build_notifier(
+    settings: Settings, plugins: dict[str, dict[str, type[Any]]]
+) -> NotificationChannel | None:
+    """Build the active NotificationChannel. Returns None if creds are
+    incomplete — the orchestrator skips alerts in that case rather than
+    crashing the whole pipeline."""
+    name = settings.notifier_backend.lower()
+    classes = plugins.get("notifiers", {})
+    if name not in classes:
+        return None
+    cls = classes[name]
+    try:
+        if hasattr(cls, "from_settings"):
+            return cls.from_settings(settings)  # type: ignore[no-any-return]
+        return cls()
+    except Exception:  # noqa: BLE001
+        # Missing creds, etc. Notifier stays None; logged at startup.
+        return None
+
+
+def _build_email_sender(
+    settings: Settings, plugins: dict[str, dict[str, type[Any]]]
+) -> EmailSender:
+    name = settings.email_sender_backend.lower()
+    classes = plugins.get("email_senders", {})
+    if name not in classes:
+        raise ConfigError(
+            f"email_sender '{name}' not registered. Available: {sorted(classes)}"
+        )
+    cls = classes[name]
+    if hasattr(cls, "from_settings"):
+        return cls.from_settings(settings)  # type: ignore[no-any-return]
+    return cls()
+
+
 def build_container(settings: Settings | None = None) -> Container:
     s = settings or Settings()
     plugins = registry.all_groups()
@@ -191,6 +250,16 @@ def build_container(settings: Settings | None = None) -> Container:
     browser = PlaywrightDriver.from_settings(s)
     page_extractor: PageExtractor = TrafilaturaPageExtractor()
 
+    notifier = _build_notifier(s, plugins)
+    email_sender = _build_email_sender(s, plugins)
+    match_repo: Repository[Match] = SQLiteRepository(Match, database_url=s.database_url)
+    draft_repo: Repository[EmailDraft] = SQLiteRepository(
+        EmailDraft, database_url=s.database_url
+    )
+    action_record_repo: Repository[ActionRecord] = SQLiteRepository(
+        ActionRecord, database_url=s.database_url
+    )
+
     return Container(
         settings=s,
         plugins=plugins,
@@ -200,4 +269,9 @@ def build_container(settings: Settings | None = None) -> Container:
         resume_loader=resume_loader,
         browser=browser,
         page_extractor=page_extractor,
+        notifier=notifier,
+        email_sender=email_sender,
+        match_repo=match_repo,
+        draft_repo=draft_repo,
+        action_record_repo=action_record_repo,
     )

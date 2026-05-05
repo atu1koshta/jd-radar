@@ -309,5 +309,221 @@ def portal_test_cmd(
         raise typer.Exit(code=2) from e
 
 
+# -----------------------------------------------------------------------
+# alert-test — Phase 3 smoke for the Telegram wiring
+# -----------------------------------------------------------------------
+
+
+@app.command("alert-test")
+def alert_test_cmd(
+    text: str = typer.Option(
+        "jobhunter alert-test: pipeline wiring OK",
+        "--text",
+        help="Body of the test message.",
+    ),
+) -> None:
+    """Push a single hello message through the configured NotificationChannel."""
+    from jobhunter.ports.notifier import Notification
+
+    container = build_container()
+    _configure_logging(container.settings.log_level)
+
+    if container.notifier is None:
+        logger.error(
+            "no notifier configured — set TELEGRAM_TOKEN + TELEGRAM_CHAT_ID in .env"
+        )
+        raise typer.Exit(code=2)
+
+    async def _run() -> None:
+        ok = await container.notifier.health_check()
+        logger.info("notifier health_check: {}", ok)
+        result = await container.notifier.send(
+            Notification(kind="alert_test", title="alert-test", body=text)
+        )
+        typer.echo(json.dumps(result.model_dump(), indent=2))
+
+    try:
+        asyncio.run(_run())
+    except JobHunterError as e:
+        logger.error("alert-test failed: {}", e)
+        raise typer.Exit(code=2) from e
+
+
+# -----------------------------------------------------------------------
+# review — list pending email drafts
+# -----------------------------------------------------------------------
+
+
+@app.command("review")
+def review_cmd(
+    show_body: bool = typer.Option(
+        False, "--show-body", help="Print the full email body for each draft."
+    ),
+) -> None:
+    """List EmailDrafts that are waiting for human approval."""
+    from jobhunter.core.entities import EmailDraftStatus
+
+    container = build_container()
+    _configure_logging(container.settings.log_level)
+
+    if container.draft_repo is None:
+        raise typer.Exit(code=2)
+
+    async def _run() -> None:
+        drafts = await container.draft_repo.list(status=EmailDraftStatus.PENDING_REVIEW)
+        if not drafts:
+            typer.echo("(no pending drafts)")
+            return
+        for d in drafts:
+            typer.echo(f"\n--- {d.id} -----------------------------------------")
+            typer.echo(f"Job:     {d.job_id}")
+            typer.echo(f"To:      {d.to or '(unset — fill with `send-draft --to`)'}")
+            typer.echo(f"Subject: {d.subject}")
+            typer.echo(f"Created: {d.created_at.isoformat()}")
+            if show_body:
+                typer.echo("")
+                typer.echo(d.body)
+
+    try:
+        asyncio.run(_run())
+    except JobHunterError as e:
+        logger.error("review failed: {}", e)
+        raise typer.Exit(code=2) from e
+
+
+# -----------------------------------------------------------------------
+# send-draft — manually approve + dispatch one email draft
+# -----------------------------------------------------------------------
+
+
+@app.command("send-draft")
+def send_draft_cmd(
+    draft_id: str = typer.Argument(..., help="EmailDraft id, e.g. draft:abc123def456"),
+    to_override: str | None = typer.Option(
+        None, "--to", help="Override the draft's recipient address."
+    ),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Skip the confirmation prompt."
+    ),
+) -> None:
+    """Send (or, with LogOnlyEmailSender, log) one EmailDraft and mark it sent."""
+    from jobhunter.core.entities import EmailDraftStatus
+    from jobhunter.ports.email_sender import Email
+
+    container = build_container()
+    _configure_logging(container.settings.log_level)
+
+    if container.draft_repo is None or container.email_sender is None:
+        raise typer.Exit(code=2)
+
+    async def _run() -> None:
+        draft = await container.draft_repo.get(draft_id)
+        if draft is None:
+            logger.error("draft '{}' not found", draft_id)
+            raise typer.Exit(code=2)
+        if draft.status != EmailDraftStatus.PENDING_REVIEW:
+            logger.error(
+                "draft '{}' is in status '{}'; only pending_review drafts can be sent",
+                draft.id,
+                draft.status,
+            )
+            raise typer.Exit(code=2)
+
+        recipient = (to_override or draft.to or "").strip()
+        if not recipient:
+            logger.error(
+                "draft '{}' has no recipient. Re-run with --to <address>", draft.id
+            )
+            raise typer.Exit(code=2)
+
+        if not yes:
+            typer.echo(f"To:      {recipient}")
+            typer.echo(f"Subject: {draft.subject}")
+            typer.echo("--- body -----------------------------------------")
+            typer.echo(draft.body)
+            typer.echo("--------------------------------------------------")
+            if not typer.confirm("Send this email?", default=False):
+                typer.echo("aborted")
+                raise typer.Exit(code=1)
+
+        result = await container.email_sender.send(
+            Email(to=recipient, subject=draft.subject, body=draft.body)
+        )
+        if not result.sent:
+            logger.error("email_sender refused: {}", result.error)
+            raise typer.Exit(code=2)
+
+        sent_draft = draft.model_copy(
+            update={
+                "status": EmailDraftStatus.SENT,
+                "sent_at": datetime.utcnow(),
+                "to": recipient,
+            }
+        )
+        await container.draft_repo.save(sent_draft)
+        typer.echo(json.dumps(result.model_dump(), indent=2))
+
+    try:
+        asyncio.run(_run())
+    except JobHunterError as e:
+        logger.error("send-draft failed: {}", e)
+        raise typer.Exit(code=2) from e
+
+
+# -----------------------------------------------------------------------
+# run — end-to-end pipeline (Phase 4 preview): search → score → act
+# -----------------------------------------------------------------------
+
+
+@app.command("run")
+def run_cmd(
+    portal: str = typer.Option("naukri", "--portal", help="Registered portal name."),
+    query: str = typer.Option(
+        "software engineer", "--query", "-q", help="Search keywords."
+    ),
+    location: str | None = typer.Option(None, "--location", help="Optional location filter."),
+    limit: int = typer.Option(1, "--limit", min=1, max=50, help="Max jobs this run."),
+    headless: bool | None = typer.Option(
+        None, "--headless/--headed", help="Override BROWSER_HEADLESS for this run."
+    ),
+    refresh_resume: bool = typer.Option(
+        False, "--refresh-resume", help="Force re-fetch resume before scoring."
+    ),
+) -> None:
+    """One-shot pipeline run: search a portal, score every result, fire actions."""
+    from jobhunter.application.run_pipeline import run_pipeline
+    from jobhunter.core.entities import JobQuery
+
+    container = build_container()
+    _configure_logging(container.settings.log_level)
+
+    if headless is not None:
+        container.settings.browser_headless = headless
+
+    logger.info(
+        "run portal={} query={!r} limit={} refresh_resume={}",
+        portal,
+        query,
+        limit,
+        refresh_resume,
+    )
+
+    async def _run() -> None:
+        report = await run_pipeline(
+            container=container,
+            portal_name=portal,
+            query=JobQuery(keywords=query, location=location),
+            limit=limit,
+            refresh_resume=refresh_resume,
+        )
+        typer.echo(json.dumps(report.__dict__, indent=2, default=str))
+
+    try:
+        asyncio.run(_run())
+    except JobHunterError as e:
+        logger.error("run failed: {}", e)
+        raise typer.Exit(code=2) from e
+
+
 if __name__ == "__main__":
     app()

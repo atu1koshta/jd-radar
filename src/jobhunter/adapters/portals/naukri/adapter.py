@@ -95,11 +95,19 @@ class NaukriAdapter:
         Returns (`page_cm`, `page`) — caller is responsible for awaiting
         `page_cm.__aexit__` once done. The pattern lets us reuse the same
         page across the search + fetch_jd loop without re-logging-in.
+
+        We probe-navigate to the dashboard URL first: with valid cookies
+        Naukri renders it; without, it bounces us to the login page. That
+        gives `is_authenticated` a meaningful URL to inspect and avoids
+        the cold-start "fresh page → login attempted → cookies redirect →
+        form never appears" race.
         """
         session = await self._ensure_session()
         page_cm = session.page()
         page = await page_cm.__aenter__()  # type: ignore[union-attr]
         try:
+            await page.goto("https://www.naukri.com/mnjuser/homepage")
+            await page.human_pause()
             already = await self._ctx.auth.is_authenticated(page)
             if not already:
                 logger.info("naukri: storage_state did not include a live session; logging in")

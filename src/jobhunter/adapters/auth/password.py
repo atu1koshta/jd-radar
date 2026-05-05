@@ -77,21 +77,33 @@ class PasswordAuth:
         await page.goto(self._sel.login_url)
         await page.human_pause()
 
-        # If valid cookies were already loaded into the context, navigating
-        # to the login URL bounces us straight to the dashboard. Treat that
-        # as a successful login instead of waiting for a form that won't
-        # appear.
+        # Many portals do a JS-driven redirect from the login URL to the
+        # dashboard when valid cookies are present. The redirect fires
+        # *after* DOMContentLoaded, so a `page.url` snapshot taken
+        # immediately would still show the login URL even though the form
+        # will never render. Race the email-input selector against a
+        # post-login URL substring: whichever wins decides the path.
+        try:
+            await page.wait_for(self._sel.email_input, timeout_ms=8000)
+        except Exception:
+            if self._sel.authenticated_url_substring and (
+                self._sel.authenticated_url_substring in page.url
+            ):
+                logger.debug(
+                    "{}: login URL redirected to {} — cookies still valid, skipping form fill",
+                    self._portal,
+                    page.url,
+                )
+                return Session(portal=self._portal, authenticated=True)
+            raise
+
+        # Final URL check — a slow JS redirect could still have fired
+        # while we were waiting for the input element.
         if self._sel.authenticated_url_substring and (
             self._sel.authenticated_url_substring in page.url
         ):
-            logger.debug(
-                "{}: login URL redirected to {} — cookies still valid, skipping form fill",
-                self._portal,
-                page.url,
-            )
             return Session(portal=self._portal, authenticated=True)
 
-        await page.wait_for(self._sel.email_input, timeout_ms=10000)
         await page.fill(self._sel.email_input, credentials.email)
         await page.human_pause()
 

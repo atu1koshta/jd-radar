@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     embed_backend: str = "noop"
     embed_model: str = "BAAI/bge-small-en-v1.5"
 
+    # ---- Notifier + email sender selection ----------------------------
+    notifier_backend: str = "telegram"
+    email_sender_backend: str = "log_only"
+
     # ---- Resume --------------------------------------------------------
     resume_loader: str = "github_yaml"
     resume_url: str = (
