@@ -78,6 +78,13 @@ class Settings(BaseSettings):
     browser_human_delay_ms_min: int = 250
     browser_human_delay_ms_max: int = 900
 
+    # Pipeline concurrency. With a local LLM (Ollama) ~2 workers is the
+    # sweet spot — Ollama serializes server-side, so more clients only
+    # buy parallelism on the browser side. With cloud LLMs that handle
+    # concurrent requests (Anthropic, Groq) bump to 3-4.
+    pipeline_workers: int = 2
+    pipeline_queue_size: int = 8
+
     # ---- Portal credentials -------------------------------------------
     naukri_email: str | None = None
     naukri_password: str | None = None

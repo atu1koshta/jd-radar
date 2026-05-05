@@ -31,6 +31,7 @@ from jobhunter.core.entities import (
     EmailDraft,
     Match,
     Resume,
+    Run,
 )
 from jobhunter.core.errors import ConfigError
 from jobhunter.ports.auth import Credentials
@@ -70,6 +71,7 @@ class Container:
     match_repo: Repository[Match] | None = None
     draft_repo: Repository[EmailDraft] | None = None
     action_record_repo: Repository[ActionRecord] | None = None
+    run_repo: Repository[Run] | None = None
 
     # ---- accessors ----------------------------------------------------
 
@@ -259,6 +261,7 @@ def build_container(settings: Settings | None = None) -> Container:
     action_record_repo: Repository[ActionRecord] = SQLiteRepository(
         ActionRecord, database_url=s.database_url
     )
+    run_repo: Repository[Run] = SQLiteRepository(Run, database_url=s.database_url)
 
     return Container(
         settings=s,
@@ -274,4 +277,5 @@ def build_container(settings: Settings | None = None) -> Container:
         match_repo=match_repo,
         draft_repo=draft_repo,
         action_record_repo=action_record_repo,
+        run_repo=run_repo,
     )

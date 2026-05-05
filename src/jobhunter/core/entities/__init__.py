@@ -10,6 +10,7 @@ from jobhunter.core.entities.interpreted_resume import (
 from jobhunter.core.entities.job import Job, JobQuery, jd_content_hash
 from jobhunter.core.entities.match import Decision, Match
 from jobhunter.core.entities.resume import Resume, canonical_body_hash
+from jobhunter.core.entities.run import Run, RunCounters, RunStatus
 
 __all__ = [
     "ActionRecord",
@@ -23,9 +24,12 @@ __all__ = [
     "Job",
     "JobQuery",
     "Match",
-    "jd_content_hash",
     "Resume",
+    "Run",
+    "RunCounters",
+    "RunStatus",
     "SeniorityLevel",
     "SkillCategory",
     "canonical_body_hash",
+    "jd_content_hash",
 ]

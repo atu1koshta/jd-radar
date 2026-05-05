@@ -130,12 +130,10 @@ class PlaywrightSession:
 
     @asynccontextmanager
     async def page(self):  # type: ignore[no-untyped-def]
+        # Stealth is applied at context construction time (see
+        # `PlaywrightDriver.session`), so every page inherits it
+        # automatically. No per-page hook needed.
         page = await self._context.new_page()
-        if _STEALTH_AVAILABLE:
-            try:
-                await Stealth().apply_stealth_async(page)  # type: ignore[misc]
-            except Exception as e:  # noqa: BLE001
-                logger.debug("apply_stealth_async failed (non-fatal): {}", e)
         try:
             yield PlaywrightPage(
                 page,
@@ -202,12 +200,24 @@ class PlaywrightDriver:
             context = await browser.new_context(
                 viewport={"width": 1366, "height": 800},
                 storage_state=storage_arg,
+                locale="en-US",
+                timezone_id="Asia/Kolkata",
                 user_agent=(
                     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
                     "AppleWebKit/537.36 (KHTML, like Gecko) "
                     "Chrome/124.0.0.0 Safari/537.36"
                 ),
             )
+            # Apply stealth to the CONTEXT, not to individual pages. This
+            # patches navigator.webdriver, navigator.languages, etc. before
+            # the first goto fires — necessary because some CDNs (Akamai
+            # on Naukri) fingerprint headless Chromium on the very first
+            # request and refuse to serve content.
+            if _STEALTH_AVAILABLE:
+                try:
+                    await Stealth().apply_stealth_async(context)  # type: ignore[misc]
+                except Exception as e:  # noqa: BLE001
+                    logger.debug("apply_stealth_async (context) failed: {}", e)
             session = PlaywrightSession(
                 context,
                 storage_state_path=storage_state_path,

@@ -483,6 +483,14 @@ def run_cmd(
     ),
     location: str | None = typer.Option(None, "--location", help="Optional location filter."),
     limit: int = typer.Option(1, "--limit", min=1, max=50, help="Max jobs this run."),
+    workers: int | None = typer.Option(
+        None,
+        "--workers",
+        "-w",
+        min=1,
+        max=8,
+        help="Process workers. Defaults to PIPELINE_WORKERS env. Use 1 for sequential debugging.",
+    ),
     headless: bool | None = typer.Option(
         None, "--headless/--headed", help="Override BROWSER_HEADLESS for this run."
     ),
@@ -501,10 +509,11 @@ def run_cmd(
         container.settings.browser_headless = headless
 
     logger.info(
-        "run portal={} query={!r} limit={} refresh_resume={}",
+        "run portal={} query={!r} limit={} workers={} refresh_resume={}",
         portal,
         query,
         limit,
+        workers or container.settings.pipeline_workers,
         refresh_resume,
     )
 
@@ -514,9 +523,24 @@ def run_cmd(
             portal_name=portal,
             query=JobQuery(keywords=query, location=location),
             limit=limit,
+            workers=workers,
             refresh_resume=refresh_resume,
         )
-        typer.echo(json.dumps(report.__dict__, indent=2, default=str))
+        typer.echo(
+            json.dumps(
+                {
+                    "run_id": report.run_id,
+                    "portal": report.portal,
+                    "query": report.query,
+                    "workers": report.workers,
+                    "status": report.status,
+                    "counters": report.counters.model_dump(),
+                    "error": report.error,
+                },
+                indent=2,
+                default=str,
+            )
+        )
 
     try:
         asyncio.run(_run())
