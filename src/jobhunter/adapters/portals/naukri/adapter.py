@@ -208,40 +208,64 @@ class NaukriAdapter:
 
             card_sel = self._selectors["search"]["job_card"]
             link_sel = self._selectors["search"]["job_title_link"]
+            company_sel = self._selectors["search"]["company_name"]
+            next_sel = self._selectors["search"]["next_button"]
 
-            try:
-                await page.wait_for(card_sel, timeout_ms=20000)
-            except Exception as e:  # noqa: BLE001
-                await self._dump_debug(page, "search-no-cards")
-                raise PortalError(
-                    f"naukri: search results never rendered ({type(e).__name__}) at {page.url}. "
-                    f"DOM may have changed — see data/debug/naukri-search-no-cards-*.png/html "
-                    f"and update src/jobhunter/adapters/portals/naukri/selectors.yaml."
-                ) from e
+            seen: set[str] = set()
+            yielded = 0
+            page_num = 1
 
-            urls = await page.query_all_attrs(link_sel, "href")
-            titles_raw = await page.evaluate(
-                f"Array.from(document.querySelectorAll({link_sel!r})).map(e => e.innerText)"
-            )
-            companies_raw = await page.evaluate(
-                f"Array.from(document.querySelectorAll("
-                f"{self._selectors['search']['company_name']!r})).map(e => e.innerText)"
-            )
+            while yielded < limit:
+                try:
+                    await page.wait_for(card_sel, timeout_ms=20000)
+                except Exception as e:  # noqa: BLE001
+                    await self._dump_debug(page, f"search-no-cards-p{page_num}")
+                    raise PortalError(
+                        f"naukri: search results never rendered ({type(e).__name__}) at {page.url}. "
+                        f"DOM may have changed — see data/debug/naukri-search-no-cards-*.png/html "
+                        f"and update src/jobhunter/adapters/portals/naukri/selectors.yaml."
+                    ) from e
 
-            n = min(limit, len(urls))
-            for i in range(n):
-                url = urls[i]
-                title = (titles_raw[i] if i < len(titles_raw) else "").strip()
-                company = (companies_raw[i] if i < len(companies_raw) else "").strip()
-                external_id = self._extract_external_id(url)
-                yield Job(
-                    id=f"naukri:{external_id}",
-                    portal=self.name,
-                    external_id=external_id,
-                    url=HttpUrl(url),
-                    title=title or "(unknown)",
-                    company=company or "(unknown)",
+                urls = await page.query_all_attrs(link_sel, "href")
+                titles_raw = await page.evaluate(
+                    f"Array.from(document.querySelectorAll({link_sel!r})).map(e => e.innerText)"
                 )
+                companies_raw = await page.evaluate(
+                    f"Array.from(document.querySelectorAll({company_sel!r})).map(e => e.innerText)"
+                )
+
+                for i, url in enumerate(urls):
+                    if yielded >= limit:
+                        break
+                    if url in seen:
+                        continue
+                    seen.add(url)
+                    title = (titles_raw[i] if i < len(titles_raw) else "").strip()
+                    company = (companies_raw[i] if i < len(companies_raw) else "").strip()
+                    external_id = self._extract_external_id(url)
+                    yield Job(
+                        id=f"naukri:{external_id}",
+                        portal=self.name,
+                        external_id=external_id,
+                        url=HttpUrl(url),
+                        title=title or "(unknown)",
+                        company=company or "(unknown)",
+                    )
+                    yielded += 1
+
+                if yielded >= limit:
+                    break
+
+                has_next = await page.is_visible(next_sel)
+                if not has_next:
+                    logger.info("naukri: no next-page button after page {}; {} jobs collected", page_num, yielded)
+                    break
+
+                logger.debug("naukri: navigating to page {}", page_num + 1)
+                await page.click(next_sel)
+                await page.human_pause()
+                page_num += 1
+
         finally:
             await page_cm.__aexit__(None, None, None)  # type: ignore[union-attr]
 

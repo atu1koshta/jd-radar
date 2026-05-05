@@ -247,7 +247,7 @@ def portal_test_cmd(
     location: str | None = typer.Option(
         None, "--location", help="Optional location filter (portal-specific format)."
     ),
-    limit: int = typer.Option(5, "--limit", min=1, max=50, help="Max jobs to fetch."),
+    limit: int = typer.Option(5, "--limit", min=1, max=500, help="Max jobs to fetch. Adapter paginates automatically."),
     experience: int | None = typer.Option(
         None, "--experience", min=0, help="Years of experience filter. Falls back to DEFAULT_EXPERIENCE_YEARS.",
     ),
@@ -381,7 +381,7 @@ def run_cmd(
         "software engineer", "--query", "-q", help="Search keywords."
     ),
     location: str | None = typer.Option(None, "--location", help="Optional location filter."),
-    limit: int = typer.Option(1, "--limit", min=1, max=50, help="Max jobs this run."),
+    limit: int = typer.Option(1, "--limit", min=1, max=500, help="Max jobs this run. Adapter paginates automatically."),
     experience: int | None = typer.Option(
         None, "--experience", min=0, help="Years of experience filter. Falls back to DEFAULT_EXPERIENCE_YEARS.",
     ),
